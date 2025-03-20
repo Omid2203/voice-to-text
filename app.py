@@ -176,4 +176,5 @@ def summarize_text(text):
         return f"Failed to summarize text: {str(e)}"
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001) 
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', debug=True, port=port) 
