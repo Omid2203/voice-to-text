@@ -1,0 +1,101 @@
+/* Google Vazirmatn Font */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* General styles */
+body {
+    font-family: 'Vazirmatn', 'Tahoma', 'Arial', sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Text display styles */
+.transcription-text, .summary-text {
+    white-space: pre-wrap;
+    direction: rtl;
+    text-align: right;
+    font-family: 'Vazirmatn', 'Tahoma', 'Arial', sans-serif;
+    line-height: 1.8;
+    max-height: 500px;
+    overflow-y: auto;
+    border: none;
+    background-color: transparent;
+}
+
+.summary-text {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* Speaker identification */
+pre {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Card customization */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+/* Form elements */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Upload button and progress styles */
+.progress {
+    height: 5px;
+    margin-top: 10px;
+}
+
+.btn-upload {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-progress {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+}
+
+/* Loading spinner for processing */
+.loading-spinner {
+    display: none;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+}
+
+/* Arabic/Persian numerals */
+@font-face {
+    font-family: 'Persian';
+    src: local('Persian');
+    unicode-range: U+0600-06FF;
+} 

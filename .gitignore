@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+env/
+venv/
+# Environment variables
+.env
+# Uploaded files
+uploads/
+*.mp3
+*.wav
+*.m4a
+*.ogg
+*.flac
+# Mac OS
+.DS_Store

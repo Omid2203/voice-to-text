@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تبدیل صوت به متن و خلاصه‌سازی</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h2>تبدیل صوت به متن و خلاصه‌سازی</h2>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-danger">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="mb-4">
+                            <div class="mb-3 text-center">
+                                <h4>فایل صوتی خود را آپلود کنید</h4>
+                                <p class="text-muted">فرمت‌های قابل قبول: MP3, WAV, M4A, OGG, FLAC</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <input class="form-control" type="file" id="file" name="file" required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" id="uploadBtn" class="btn btn-primary btn-lg btn-upload">آپلود و پردازش</button>
+                                <div class="progress d-none" id="uploadProgress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-4">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h5>این ابزار چه کاری انجام می‌دهد؟</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ol>
+                                        <li>فایل صوتی را به متن تبدیل می‌کند (با تشخیص گوینده‌های مختلف)</li>
+                                        <li>متن حاصل را برای شما خلاصه می‌کند</li>
+                                        <li>هم متن کامل و هم خلاصه را نمایش می‌دهد</li>
+                                    </ol>
+                                    <p class="text-muted">این ابزار از API های ElevenLabs و Gemini استفاده می‌کند.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="text-center mt-5 mb-3">
+        <p class="text-muted">&copy; ۱۴۰۳ - تمامی حقوق محفوظ است</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('uploadForm');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressBar = document.querySelector('.progress-bar');
+            const progressContainer = document.getElementById('uploadProgress');
+            const fileInput = document.getElementById('file');
+
+            uploadForm.addEventListener('submit', function(e) {
+                // Check if a file was selected
+                if (fileInput.files.length === 0) {
+                    return;
+                }
+
+                // Show progress bar
+                progressContainer.classList.remove('d-none');
+                
+                // Change button appearance
+                uploadBtn.textContent = 'در حال آپلود...';
+                uploadBtn.classList.add('btn-progress');
+                uploadBtn.disabled = true;
+
+                // Simulate progress for better UX (since we can't track actual upload progress without AJAX)
+                let progress = 0;
+                const interval = setInterval(function() {
+                    progress += Math.random() * 10;
+                    if (progress > 90) {
+                        progress = 90; // Keep at 90% until actual completion
+                        clearInterval(interval);
+                    }
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html> 
