@@ -1,0 +1,5 @@
+[start]
+cmd = "gunicorn app:app"
+
+[variables]
+PYTHONUNBUFFERED = "1" 

@@ -1,25 +1,54 @@
 import os
 import json
+import logging
 import requests
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+# Try a different import approach for Flask-Session
+try:
+    from flask_session import Session
+except ImportError:
+    # Alternative approach if direct import fails
+    from flask.ext.session import Session
 from werkzeug.utils import secure_filename
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'mp3', 'wav', 'm4a', 'ogg', 'flac'}
 
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Session configuration
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.environ.get('SESSION_FILE_DIR', 'flask_session')
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
 
-# API Keys - better to have these in .env file
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "sk_148990ea9fdbf36edc2bdcb6490e16264f8fb45bbd9625b5")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+# Ensure required directories exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)  # Ensure session directory exists
+
+# Initialize Flask-Session
+try:
+    Session(app)
+    logger.info("Flask-Session initialized successfully")
+except Exception as e:
+    logger.warning(f"Could not initialize Flask-Session: {e}")
+    # Fallback to Flask's default session
+    logger.info("Using Flask's default session management")
+
+# API Keys - read only from environment variables
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -96,6 +125,7 @@ def results():
 def speech_to_text(audio_file_path):
     """Convert speech to text using ElevenLabs API"""
     try:
+        logger.info(f"Starting speech to text conversion for {audio_file_path}")
         url = "https://api.elevenlabs.io/v1/speech-to-text"
         headers = {
             "xi-api-key": ELEVENLABS_API_KEY
@@ -106,17 +136,23 @@ def speech_to_text(audio_file_path):
             "diarize": True,  # Speaker diarization
         }
         
+        if not os.path.exists(audio_file_path):
+            logger.error(f"Audio file not found: {audio_file_path}")
+            return None
+            
         with open(audio_file_path, "rb") as audio_file:
             files = {"file": audio_file}
+            logger.info("Sending request to ElevenLabs API")
             response = requests.post(url, headers=headers, data=data, files=files)
         
         if response.status_code == 200:
+            logger.info("Successfully converted speech to text")
             return response.json()
         else:
-            print(f"API Error: {response.status_code} - {response.text}")
+            logger.error(f"API Error: {response.status_code} - {response.text}")
             return None
     except Exception as e:
-        print(f"Exception in speech_to_text: {e}")
+        logger.exception(f"Exception in speech_to_text: {e}")
         return None
 
 def process_transcription(data):
@@ -175,6 +211,56 @@ def summarize_text(text):
         print(f"Exception in summarize_text: {e}")
         return f"Failed to summarize text: {str(e)}"
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Check if required directories exist
+        upload_dir_exists = os.path.exists(app.config['UPLOAD_FOLDER'])
+        session_dir_exists = os.path.exists(app.config['SESSION_FILE_DIR'])
+        
+        # Check API keys
+        elevenlabs_key_set = bool(ELEVENLABS_API_KEY)
+        gemini_key_set = bool(GEMINI_API_KEY)
+        
+        # Check Flask-Session
+        session_working = False
+        try:
+            # Test setting a session value
+            session['health_check'] = True
+            session_working = session.get('health_check', False)
+        except Exception as e:
+            logger.error(f"Session test failed: {e}")
+        
+        # Return status
+        return jsonify({
+            'status': 'healthy',
+            'environment': os.environ.get('FLASK_ENV', 'production'),
+            'upload_directory': upload_dir_exists,
+            'session_directory': session_dir_exists,
+            'elevenlabs_api_key_set': elevenlabs_key_set,
+            'gemini_api_key_set': gemini_key_set,
+            'session_working': session_working,
+            'version': '1.0.1'
+        })
+    except Exception as e:
+        logger.exception(f"Health check failed: {e}")
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
+
+@app.errorhandler(404)
+def page_not_found(e):
+    logger.error(f"404 error: {request.path}")
+    return render_template('index.html'), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error(f"500 error: {str(e)}")
+    return render_template('index.html', error="Internal server error. Please try again later."), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', debug=True, port=port) 
+    logger.info(f"Starting application on port {port}")
+    app.run(host='0.0.0.0', port=port) 
